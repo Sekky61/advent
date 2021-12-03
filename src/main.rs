@@ -2,6 +2,6 @@ mod days;
 mod filereader;
 
 fn main() {
-    let res = days::day1::part2();
+    let res = days::day2::part2();
     println!("Result: {:?}", res);
 }
