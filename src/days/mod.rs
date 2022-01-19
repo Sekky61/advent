@@ -6,4 +6,3 @@ pub mod day2;
 pub mod day3;
 #[allow(dead_code)]
 pub mod day4;
-

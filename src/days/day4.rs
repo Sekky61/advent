@@ -1,6 +1,5 @@
-use itertools::Itertools;
-
 use crate::filereader;
+use itertools::Itertools;
 
 // number, is crossed
 pub struct BingoField(u8, bool);
