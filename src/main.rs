@@ -1,7 +1,11 @@
 mod days;
-mod filereader;
+mod util;
 
-fn main() {
-    let res = days::day4::part2();
+fn main() -> Result<(), &'static str> {
+    //let res = days::day4::part2();
+
+    let res = days::solve_challenge(1, 1)?;
     println!("Result: {:?}", res);
+
+    Ok(())
 }

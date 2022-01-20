@@ -1,4 +1,4 @@
-use crate::filereader;
+use crate::util;
 
 pub enum Direction {
     Forward,
@@ -83,7 +83,7 @@ pub fn resulting_offset_aim(commands: &[Command]) -> usize {
 }
 
 pub fn part1() -> usize {
-    let lines = filereader::read_lines("inputs/day2").unwrap();
+    let lines = util::read_lines("inputs/day2").unwrap();
     let parsed_lines: Vec<_> = lines
         .iter()
         .map(|line| Command::from_string(line))
@@ -93,7 +93,7 @@ pub fn part1() -> usize {
 }
 
 pub fn part2() -> usize {
-    let lines = filereader::read_lines("inputs/day2").unwrap();
+    let lines = util::read_lines("inputs/day2").unwrap();
     let parsed_lines: Vec<_> = lines
         .iter()
         .map(|line| Command::from_string(line))

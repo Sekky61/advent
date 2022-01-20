@@ -1,4 +1,4 @@
-use crate::filereader;
+use crate::util;
 use itertools::Itertools;
 
 // number, is crossed
@@ -161,7 +161,7 @@ fn last_winner(numbers: Vec<u8>, mut boards: Vec<BingoBoard>) -> (usize, usize) 
 }
 
 pub fn part1() -> usize {
-    let lines = filereader::read_lines("inputs/day4").unwrap();
+    let lines = util::read_lines("inputs/day4").unwrap();
 
     let (numbers, boards) = parse_input(lines);
 
@@ -173,7 +173,7 @@ pub fn part1() -> usize {
 }
 
 pub fn part2() -> usize {
-    let lines = filereader::read_lines("inputs/day4").unwrap();
+    let lines = util::read_lines("inputs/day4").unwrap();
 
     let (numbers, boards) = parse_input(lines);
 

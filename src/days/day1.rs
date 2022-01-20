@@ -1,4 +1,4 @@
-use crate::filereader;
+use crate::util;
 use itertools::Itertools;
 
 pub fn number_of_depth_increases(values: &[i32]) -> usize {
@@ -20,7 +20,7 @@ pub fn number_of_depth_increases_sliding(values: &[i32]) -> usize {
 }
 
 pub fn part1() -> usize {
-    let lines = filereader::read_lines("inputs/day1").unwrap();
+    let lines = util::read_lines("inputs/day1").unwrap();
     let parsed_lines: Vec<i32> = lines
         .iter()
         .map(|line| line.parse().expect("Not a number"))
@@ -30,7 +30,7 @@ pub fn part1() -> usize {
 }
 
 pub fn part2() -> usize {
-    let lines = filereader::read_lines("inputs/day1").unwrap();
+    let lines = util::read_lines("inputs/day1").unwrap();
     let parsed_lines: Vec<i32> = lines
         .iter()
         .map(|line| line.parse().expect("Not a number"))

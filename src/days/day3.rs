@@ -1,4 +1,4 @@
-use crate::filereader;
+use crate::util;
 
 pub fn get_oxygen_co2(lines: &[String]) -> (u32, u32) {
     let bit_count = lines[0].len();
@@ -101,7 +101,7 @@ pub fn get_gamma_epsilon(lines: &[String]) -> (usize, usize) {
 }
 
 pub fn part1() -> usize {
-    let lines = filereader::read_lines("inputs/day3").unwrap();
+    let lines = util::read_lines("inputs/day3").unwrap();
 
     let (gamma, eps) = get_gamma_epsilon(&lines);
 
@@ -109,7 +109,7 @@ pub fn part1() -> usize {
 }
 
 pub fn part2() -> usize {
-    let lines = filereader::read_lines("inputs/day3").unwrap();
+    let lines = util::read_lines("inputs/day3").unwrap();
 
     let (oxygen, co2) = get_oxygen_co2(&lines);
 
