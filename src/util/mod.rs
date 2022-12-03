@@ -55,4 +55,23 @@ pub trait DaySolution {
     fn part2_solution(&self) -> usize {
         0
     }
+
+    fn get_year(&self) -> u64;
+
+    fn get_day(&self) -> u64;
+
+    fn get_input_lines(&self) -> io::Result<Vec<String>> {
+        let year_text = year_text(self.get_year());
+        let filename = format!("inputs/{}/day{}", year_text, self.get_day());
+        read_lines(filename)
+    }
+}
+
+fn year_text(year: u64) -> &'static str {
+    match year {
+        2021 => "twentyone",
+        2022 => "twentytwo",
+        2023 => "twentythree",
+        _ => panic!("Unknown year {year}"),
+    }
 }
