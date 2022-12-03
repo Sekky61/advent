@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 itertools = "0.10.1"
 nom = "7.1.0"
+clap = { version = "4.0.29", features = ["derive"] }
