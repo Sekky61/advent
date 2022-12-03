@@ -34,6 +34,7 @@ impl Dispatch {
         todo!()
     }
 
+    // todo not automatic
     fn twentytwo(day: u64) -> Box<dyn DaySolution> {
         let sol = match day {
             1 => crate::twentytwo::day1::Solution::new(2022, day),
