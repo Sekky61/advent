@@ -36,11 +36,13 @@ impl Dispatch {
 
     // todo not automatic
     fn twentytwo(day: u64) -> Box<dyn DaySolution> {
-        let sol = match day {
-            1 => crate::twentytwo::day1::Solution::new(2022, day),
+        let year = 2022;
+        match day {
+            1 => Box::new(crate::twentytwo::day1::Solution::new(year, day)),
+            2 => Box::new(crate::twentytwo::day2::Solution::new(year, day)),
+            6 => Box::new(crate::twentytwo::day6::Solution::new(year, day)),
             _ => panic!("Solution for day {day} does not exist"),
-        };
-        Box::new(sol)
+        }
     }
 }
 
