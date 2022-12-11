@@ -117,8 +117,7 @@ pub fn parse_input(lines: Vec<String>) -> (Vec<u8>, Vec<BingoBoard>) {
     for board_input in boards_input_iter {
         let board: Vec<u8> = board_input
             .skip(1)
-            .map(|s| s.split_whitespace())
-            .flatten()
+            .flat_map(|s| s.split_whitespace())
             .map(|c| c.parse::<u8>().expect("Not a number"))
             .collect();
 

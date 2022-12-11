@@ -1,5 +1,4 @@
 use crate::util::DaySolution;
-use itertools::Itertools;
 use nom::{bytes::complete::take, character::complete::anychar, sequence::tuple, IResult};
 
 pub struct Solution {

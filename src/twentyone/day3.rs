@@ -17,11 +17,7 @@ pub fn get_oxygen_co2(lines: &[String]) -> (u32, u32) {
             .count();
         let zero_count = size - one_count;
         let most_common_char = if one_count >= zero_count { '1' } else { '0' };
-        most_common = most_common
-            .iter()
-            .filter(|&s| s.chars().nth(i).expect("i bad index") == most_common_char)
-            .copied()
-            .collect();
+        most_common.retain(|s| s.chars().nth(i).expect("i bad index") == most_common_char);
 
         if most_common.len() == 1 {
             oxygen_found = true;
@@ -37,11 +33,7 @@ pub fn get_oxygen_co2(lines: &[String]) -> (u32, u32) {
             .count();
         let zero_count = size - one_count;
         let least_common_char = if one_count < zero_count { '1' } else { '0' };
-        least_common = least_common
-            .iter()
-            .filter(|&s| s.chars().nth(i).expect("i bad index") == least_common_char)
-            .copied()
-            .collect();
+        least_common.retain(|s| s.chars().nth(i).expect("i bad index") == least_common_char);
 
         if least_common.len() == 1 {
             co2_found = true;
