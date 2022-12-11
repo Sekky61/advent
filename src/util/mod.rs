@@ -40,6 +40,7 @@ impl Dispatch {
         match day {
             1 => Box::new(crate::twentytwo::day1::Solution::new(year, day)),
             2 => Box::new(crate::twentytwo::day2::Solution::new(year, day)),
+            3 => Box::new(crate::twentytwo::day3::Solution::new(year, day)),
             6 => Box::new(crate::twentytwo::day6::Solution::new(year, day)),
             _ => panic!("Solution for day {day} does not exist"),
         }
