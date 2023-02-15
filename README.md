@@ -2,7 +2,7 @@
 
 Solution to some of the AoC challanges. Written in Rust, trying to use iterators where possible.
 
-Includes Python script to download inputs from the official website.
+Includes Python script to download inputs from the official website and generate corresponding Rust module.
 
 ## Usage
 

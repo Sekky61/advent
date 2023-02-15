@@ -78,6 +78,10 @@ def main():
 
     download_and_save_input(year, day)
 
+    # create the directory for the year if it doesn't exist
+    if not os.path.exists(f"inputs/{yeartext}"):
+        os.makedirs(f"inputs/{yeartext}")
+
     with open(f"src/{yeartext}/mod.rs", "a") as mod_file:
         mod_file.write(f"#[allow(dead_code)]\npub mod day{day};\n")
     
