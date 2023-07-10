@@ -1,7 +1,18 @@
 use core::panic;
 use std::fs::File;
-use std::io::{self, BufRead};
+use std::io::{self, BufRead, Read};
 use std::path::Path;
+
+pub fn read_file<P>(filename: P) -> io::Result<String>
+where
+    P: AsRef<Path>,
+{
+    let mut file = File::open(filename)?;
+    let mut buf = String::new();
+    file.read_to_string(&mut buf)?;
+
+    Ok(buf)
+}
 
 pub fn read_lines<P>(filename: P) -> io::Result<Vec<String>>
 where
@@ -42,6 +53,7 @@ impl Dispatch {
             2 => Box::new(crate::twentytwo::day2::Solution::new(year, day)),
             3 => Box::new(crate::twentytwo::day3::Solution::new(year, day)),
             6 => Box::new(crate::twentytwo::day6::Solution::new(year, day)),
+            7 => Box::new(crate::twentytwo::day7::Solution::new(year, day)),
             _ => panic!("Solution for day {day} does not exist"),
         }
     }
@@ -63,6 +75,12 @@ pub trait DaySolution {
     fn get_year(&self) -> u64;
 
     fn get_day(&self) -> u64;
+
+    fn get_input(&self) -> io::Result<String> {
+        let year_text = year_text(self.get_year());
+        let filename = format!("inputs/{}/day{}", year_text, self.get_day());
+        read_file(filename)
+    }
 
     fn get_input_lines(&self) -> io::Result<Vec<String>> {
         let year_text = year_text(self.get_year());
