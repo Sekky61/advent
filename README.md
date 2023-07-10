@@ -6,12 +6,16 @@ Includes Python script to download inputs from the official website and generate
 
 ## Usage
 
-Setup script:
+### Setup script:
+Set `AOC_SESSION_ID` environment variable to your session ID (can be found in cookies after logging in to AoC website).
+Then, run the script with year and day as arguments:
 ```shell
 day_setup.py [year] [day]
 ```
+This will set up a new Rust module in `src/year/day.rs` and download the input to `inputs/year/day.txt`.
 
-AoC challange:
+### AoC challange:
+To run the solution for a given year, day and part, use:
 ```shell
 cargo run --release -- --year <YEAR> --day <DAY> --part <PART>
 ```

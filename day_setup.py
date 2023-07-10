@@ -1,4 +1,11 @@
+#!/usr/bin/env python3
+
 # setup for new day
+
+# Dependencies
+#
+# - requests
+# - python-dotenv
 
 import os
 import sys
