@@ -2,14 +2,14 @@ use crate::util::DaySolution;
 
 use nom::{
     branch::alt,
-    bytes::complete::{tag, take_till, take_while},
-    character::complete::{alpha1, digit1, newline, space1},
+    bytes::complete::{tag, take_till},
+    character::complete::{digit1, newline, space1},
     combinator::{all_consuming, map, opt},
     multi::many0,
     sequence::tuple,
-    Err, IResult,
+    IResult,
 };
-use slab_tree::{NodeId, NodeRef, Tree, TreeBuilder};
+use slab_tree::{NodeId, Tree, TreeBuilder};
 
 // Types and parsing
 
@@ -190,7 +190,7 @@ impl FileSystem {
         let mut current_dir = self.tree.get_mut(self.current_dir).expect("Must exist");
 
         // Add the new directory
-        let new_dir = current_dir.append(Folder {
+        current_dir.append(Folder {
             name: name.into(),
             files: Vec::new(),
         });
