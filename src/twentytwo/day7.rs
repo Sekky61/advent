@@ -1,16 +1,17 @@
 use crate::util::DaySolution;
 
 use nom::{
+    branch::alt,
     bytes::complete::{tag, take_till, take_while},
-    character::complete::{newline, space1},
-    combinator::opt,
+    character::complete::{alpha1, digit1, newline, space1},
+    combinator::{all_consuming, map, opt},
     multi::many0,
     sequence::tuple,
     Err, IResult,
 };
-use slab_tree::{NodeId, Tree, TreeBuilder};
+use slab_tree::{NodeId, NodeRef, Tree, TreeBuilder};
 
-// Types
+// Types and parsing
 
 #[derive(PartialEq, Eq, Debug)]
 pub enum CdTarget {
@@ -20,19 +21,13 @@ pub enum CdTarget {
 }
 
 impl CdTarget {
-    fn parse(path: &str) -> Result<CdTarget, &'static str> {
-        let target = match path {
-            "/" => CdTarget::Root,
-            ".." => CdTarget::Parent,
-            path => {
-                if path.chars().any(|c| c == '/' || c == ' ') {
-                    return Err("Path contains / or a space");
-                }
-                CdTarget::Child(path.to_string())
-            }
-        };
-
-        Ok(target)
+    fn parse(input: &str) -> IResult<&str, CdTarget> {
+        let (input, path) = take_word(input)?;
+        match path {
+            "/" => Ok((input, CdTarget::Root)),
+            ".." => Ok((input, CdTarget::Parent)),
+            _ => Ok((input, CdTarget::Child(path.into()))),
+        }
     }
 }
 
@@ -63,104 +58,88 @@ pub enum Command {
     Ls { entries: Vec<FileSystemEntry> },
 }
 
+impl Command {
+    /// Parse a cd command
+    fn parse_cd(input: &str) -> IResult<&str, Command> {
+        let (input, (_, _, _, _, target, _)) = tuple((
+            tag("$"),
+            space1,
+            tag("cd"),
+            space1,
+            CdTarget::parse,
+            opt(newline),
+        ))(input)?;
+
+        Ok((input, Command::Cd(target)))
+    }
+
+    /// Parse an ls command
+    fn parse_ls(input: &str) -> IResult<&str, Command> {
+        let (input, (_, _, _, _, entries)) = tuple((
+            tag("$"),
+            space1,
+            tag("ls"),
+            opt(newline),
+            many0(Command::ln_line),
+        ))(input)?;
+
+        Ok((input, Command::Ls { entries }))
+    }
+
+    /// Parse a directory entry from the output of ls
+    fn parse_dir(input: &str) -> IResult<&str, FileSystemEntry> {
+        map(
+            tuple((tag("dir"), space1, take_word, opt(newline))),
+            |(_, _, name, _)| FileSystemEntry::new(name, FileSystemEntryKind::Directory),
+        )(input)
+    }
+
+    /// Parse a file entry from the output of ls
+    fn parse_file(input: &str) -> IResult<&str, FileSystemEntry> {
+        map(
+            tuple((digit1::<&str, _>, space1, take_word, opt(newline))),
+            |(size, _, name, _)| {
+                FileSystemEntry::new(
+                    name,
+                    FileSystemEntryKind::File {
+                        size: size.parse().unwrap(),
+                    },
+                )
+            },
+        )(input)
+    }
+
+    /// Parse one line of the output of ls
+    fn ln_line(input: &str) -> IResult<&str, FileSystemEntry> {
+        alt((Command::parse_dir, Command::parse_file))(input)
+    }
+
+    /// Parse a command from a string
+    fn parse(input: &str) -> IResult<&str, Command> {
+        alt((Command::parse_cd, Command::parse_ls))(input)
+    }
+}
+
+/// Take a word from the input
+fn take_word(input: &str) -> IResult<&str, &str> {
+    take_till(|c: char| c.is_whitespace())(input)
+}
+
 #[derive(PartialEq, Eq, Debug)]
 pub struct CommandHistory {
     commands: Vec<Command>,
 }
 
-// Parsing
-
-fn take_word(input: &str) -> IResult<&str, &str> {
-    take_till(|c: char| c.is_whitespace())(input)
-}
-
-// Parse one line of the output of ls
-fn ln_line(input: &str) -> IResult<&str, FileSystemEntry> {
-    let mut dir_parser = tuple((tag("dir"), space1, take_word, opt(newline)));
-    let mut file_parser = tuple((
-        take_while(|c: char| c.is_numeric()),
-        space1,
-        take_word,
-        opt(newline),
-    ));
-
-    if let Ok((input, (_, _, name, _))) = dir_parser(input) {
-        Ok((
-            input,
-            FileSystemEntry::new(name, FileSystemEntryKind::Directory),
-        ))
-    } else if let Ok((input, (size, _, name, _))) = file_parser(input) {
-        Ok((
-            input,
-            FileSystemEntry::new(
-                name,
-                FileSystemEntryKind::File {
-                    size: size.parse().unwrap(),
-                },
-            ),
-        ))
-    } else {
-        Err(nom::Err::Error(nom::error::Error::new(
-            input,
-            nom::error::ErrorKind::Tag,
-        )))
-    }
-}
-
-fn command(input: &str) -> IResult<&str, Command> {
-    // Consume the $ and the spaces after it
-    let (input, _) = tuple((tag("$"), space1))(input)?;
-    // Consume the command name
-    let (input, command_name) = take_word(input)?;
-
-    let (input, command) = match command_name {
-        "cd" => {
-            // Consume spaces and then a path
-            let (input, _) = space1(input)?;
-            let (input, path) = take_word(input)?;
-            // Consume until newline
-            let (input, _) = newline(input)?;
-            let target = CdTarget::parse(path).unwrap();
-            (input, Command::Cd(target))
-        }
-        "ls" => {
-            // Consume newline
-            let (input, _) = newline(input)?;
-            // Consume lines until a newline with a $ at the start
-            let (input, entries) = many0(ln_line)(input)?;
-
-            (input, Command::Ls { entries })
-        }
-        _ => {
-            return Err(Err::Failure(nom::error::Error::new(
-                input,
-                nom::error::ErrorKind::Tag,
-            )))
-        }
-    };
-
-    Ok((input, command))
-}
-
 impl CommandHistory {
-    pub fn new() -> Self {
-        Self {
-            commands: Vec::new(),
-        }
-    }
-
+    /// Parse a command history from a string (challange input, one command per line)
     pub fn parse(input: &str) -> IResult<&str, Self> {
-        let mut history_parser = many0(command);
-
-        let (input_str, commands) = history_parser(input)?;
-
-        if !input_str.is_empty() {
-            panic!("Failed to parse input");
-        }
-
-        Ok((input_str, Self { commands }))
+        map(all_consuming(many0(Command::parse)), |commands| Self {
+            commands,
+        })(input)
     }
 }
+
+// Solution
 
 pub struct File {
     name: String,
@@ -173,6 +152,7 @@ pub struct Folder {
 }
 
 impl Folder {
+    /// Get the size of all files directly in this folder
     pub fn get_size(&self) -> usize {
         self.files.iter().map(|f| f.size).sum()
     }
@@ -180,100 +160,117 @@ impl Folder {
 
 pub struct FileSystem {
     // Root is at index 0
+    current_dir: NodeId,
     tree: Tree<Folder>,
 }
 
 impl FileSystem {
-    pub fn build_from_command_history(
-        history: &CommandHistory,
-    ) -> Result<FileSystem, &'static str> {
+    /// Iterate over all folders in the file system
+    pub fn folders(&self) -> impl Iterator<Item = NodeId> + '_ {
+        let root = self.tree.root().expect("Must exist");
+        root.traverse_pre_order().map(|n| n.node_id())
+    }
+
+    pub fn add_file(mut self, name: &str, size: usize) -> Self {
+        // Get the current directory
+        let mut current_dir = self.tree.get_mut(self.current_dir).expect("Must exist");
+
+        // Add the new file
+        current_dir.data().files.push(File {
+            name: name.into(),
+            size,
+        });
+
+        self
+    }
+
+    /// Add a new subdirectory to the current directory
+    pub fn add_directory(mut self, name: &str) -> Self {
+        // Get the current directory
+        let mut current_dir = self.tree.get_mut(self.current_dir).expect("Must exist");
+
+        // Add the new directory
+        let new_dir = current_dir.append(Folder {
+            name: name.into(),
+            files: Vec::new(),
+        });
+
+        self
+    }
+
+    /// Execute a command, mutating the model of the file system
+    pub fn exec_command(self, command: &Command) -> Self {
+        match command {
+            Command::Cd(target) => {
+                let current_dir = match target {
+                    CdTarget::Root => self.tree.root_id().expect("Must exist"),
+                    CdTarget::Parent => self
+                        .tree
+                        .get(self.current_dir)
+                        .expect("Must exist")
+                        .parent()
+                        .expect("Must exist")
+                        .node_id(),
+                    CdTarget::Child(name) => self
+                        .tree
+                        .get(self.current_dir)
+                        .expect("Must exist")
+                        .children()
+                        .find(|n| n.data().name == *name)
+                        .expect("Must exist")
+                        .node_id(),
+                };
+
+                Self {
+                    current_dir,
+                    tree: self.tree,
+                }
+            }
+            Command::Ls { entries } => {
+                // For each entry, add it to the current directory
+                entries.iter().fold(self, |fs, entry| match entry.kind {
+                    FileSystemEntryKind::Directory => fs.add_directory(&entry.name),
+                    FileSystemEntryKind::File { size } => fs.add_file(&entry.name, size),
+                })
+            }
+        }
+    }
+
+    /// Reconstruction of the file system from the command history
+    pub fn build_from_command_history(history: &CommandHistory) -> FileSystem {
         let root_dir = Folder {
             name: "/".to_string(),
             files: Vec::new(),
         };
-        let mut tree = TreeBuilder::new().with_root(root_dir).build();
-        let mut current_dir = tree.root_id().expect("Must exist");
+        let tree = TreeBuilder::new().with_root(root_dir).build();
+        let current_dir = tree.root_id().expect("Must exist");
 
-        for command in &history.commands {
-            let mut dir = match tree.get_mut(current_dir) {
-                Some(dir) => dir,
-                None => {
-                    return Err("Invalid current directory");
-                }
-            };
+        let fs = Self { current_dir, tree };
 
-            match command {
-                Command::Cd(target) => match target {
-                    CdTarget::Root => {
-                        current_dir = tree.root_id().expect("Must exist");
-                    }
-                    CdTarget::Parent => match dir.parent() {
-                        Some(parent) => {
-                            current_dir = parent.node_id();
-                        }
-                        None => {
-                            return Err("Tried to cd to parent of root");
-                        }
-                    },
-                    CdTarget::Child(name) => {
-                        let dir_ref = tree.get(current_dir).unwrap();
-                        let child = dir_ref
-                            .children()
-                            .find(|child| child.data().name == *name)
-                            .ok_or("Subdirectory not found")?;
-
-                        current_dir = child.node_id();
-                    }
-                },
-                Command::Ls { entries } => {
-                    // For each entry, add it to the current directory
-                    entries.iter().for_each(|entry| match entry.kind {
-                        FileSystemEntryKind::Directory => {
-                            let new_dir = Folder {
-                                name: entry.name.clone(),
-                                files: Vec::new(),
-                            };
-                            let mut dir = tree.get_mut(current_dir).unwrap();
-                            dir.append(new_dir);
-                        }
-                        FileSystemEntryKind::File { size } => {
-                            let new_file = File {
-                                name: entry.name.clone(),
-                                size,
-                            };
-                            let mut dir = tree.get_mut(current_dir).unwrap();
-                            dir.data().files.push(new_file);
-                        }
-                    });
-                }
-            }
-        }
-
-        Ok(Self { tree })
+        history.commands.iter().fold(fs, FileSystem::exec_command)
     }
 
+    /// Get the size of a folder and all its subfolders
     pub fn get_folder_size_recursive(&self, folder_id: NodeId) -> usize {
-        let mut size = 0;
         let folder = self.tree.get(folder_id).unwrap();
 
-        for node in folder.traverse_pre_order() {
-            size += node.data().get_size();
-        }
-
-        size
+        folder
+            .traverse_pre_order()
+            .fold(0, |acc, folder_node| acc + folder_node.data().get_size())
     }
 
-    pub fn get_folders_at_most(&self, size: usize) -> Vec<NodeId> {
-        let mut folders = Vec::new();
-        let root = self.tree.root().unwrap();
+    /// Get all folders that are at most the given size (including subfolders)
+    pub fn get_folders_at_most(&self, size: usize) -> impl Iterator<Item = NodeId> + '_ {
+        self.folders()
+            .filter(move |&folder_id| self.get_folder_size_recursive(folder_id) <= size)
+    }
 
-        for node in root.traverse_pre_order() {
-            if self.get_folder_size_recursive(node.node_id()) <= size {
-                folders.push(node.node_id());
-            }
-        }
-
-        folders
+    /// Get the smallest folder that is at least the given size (including subfolders)
+    pub fn get_smallest_folder_larger_than(&self, size: usize) -> NodeId {
+        self.folders()
+            .filter(|&folder_id| self.get_folder_size_recursive(folder_id) >= size)
+            .min_by_key(|folder_id| self.get_folder_size_recursive(*folder_id))
+            .unwrap()
     }
 }
 
@@ -288,23 +285,38 @@ impl DaySolution for Solution {
     }
 
     fn part1_solution(&self) -> usize {
+        // Parse the input into filesystem
         let input = self.get_input().unwrap();
-
         let (_, history) = CommandHistory::parse(&input).unwrap();
-        let fs = FileSystem::build_from_command_history(&history).unwrap();
+        let fs = FileSystem::build_from_command_history(&history);
 
-        let max_size = 100000;
-        let small_folders = fs.get_folders_at_most(max_size);
-
-        small_folders
-            .iter()
-            .map(|folder_id| fs.get_folder_size_recursive(*folder_id))
-            .sum::<usize>()
+        // Get all folders that are at most 100_000 bytes and sum their sizes
+        let max_size = 100_000;
+        fs.get_folders_at_most(max_size)
+            .map(|folder_id| fs.get_folder_size_recursive(folder_id))
+            .sum()
     }
 
     fn part2_solution(&self) -> usize {
-        let lines = self.get_input_lines().unwrap();
-        0
+        // Parse the input into filesystem
+        let input = self.get_input().unwrap();
+        let (_, history) = CommandHistory::parse(&input).unwrap();
+        let fs = FileSystem::build_from_command_history(&history);
+
+        // Define lower bound for the sought directory size
+        let total_space = 70_000_000;
+        let needed_space = 30_000_000;
+
+        let root = fs.tree.root_id().unwrap();
+        let used_space = fs.get_folder_size_recursive(root);
+
+        let current_free_space = total_space - used_space;
+        let space_to_free = needed_space - current_free_space;
+
+        // Get the smallest folder that is at least the given size
+        let node = fs.get_smallest_folder_larger_than(space_to_free);
+
+        fs.get_folder_size_recursive(node)
     }
 
     fn get_year(&self) -> u64 {
@@ -327,7 +339,7 @@ dir a
 18 filename
 "#;
 
-        let (input, command) = command(input).unwrap();
+        let (input, command) = Command::parse(input).unwrap();
 
         assert_eq!(input, "");
         assert_eq!(
@@ -353,7 +365,7 @@ dir a
         let input = r#"$ cd ..
 "#;
 
-        let (input, command) = command(input).unwrap();
+        let (input, command) = Command::parse(input).unwrap();
 
         assert_eq!(input, "");
         assert_eq!(command, Command::Cd(CdTarget::Parent));

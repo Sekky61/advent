@@ -1,5 +1,4 @@
 use crate::util::DaySolution;
-use itertools::Itertools;
 
 pub struct Solution {
     year: u64,
