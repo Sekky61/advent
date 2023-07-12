@@ -1,8 +1,8 @@
 # Advent of Code
 
-Solution to some of the AoC challanges. Written in Rust, trying to use *iterators* where possible.
-
-Includes a Python script to download inputs from the official website and generate corresponding Rust module.
+Solution to some of the [AoC](https://adventofcode.com/) challanges.
+- Written in Rust, trying to use *iterators* where possible.
+- Includes a script to setup a new challange.
 
 ## Highlights
 
