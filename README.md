@@ -1,5 +1,11 @@
 # Advent of Code
 
+```rust
+challanges.iter()
+          .map(solve)
+          .collect::<Vec<_>>()
+```
+
 Solution to some of the [AoC](https://adventofcode.com/) challanges.
 - Written in Rust, trying to use *iterators* where possible.
 - Includes a script to setup a new challange.
@@ -22,6 +28,7 @@ Then, run the script with year and day as arguments:
 day_setup.py [year] [day]
 ```
 This will set up a new Rust module in `src/year/day.rs` and download the input to `inputs/year/day.txt`.
+Then, add a line to `impl Dispatch` located in `src/util/mod.rs` (see other lines of the match statement).
 
 ### AoC challange
 To run the solution for a given year, day and part, use:
